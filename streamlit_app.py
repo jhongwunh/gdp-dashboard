@@ -3,18 +3,19 @@ import pandas as pd
 import subprocess
 from io import StringIO
 
-# Ensure spaCy and the language model are available
-try:
-    import spacy
-    nlp = spacy.load("en_core_web_sm")
-except (ImportError, OSError):
-    subprocess.run(["pip", "install", "spacy"])
-    import spacy
-    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
-    nlp = spacy.load("en_core_web_sm")
+# Function to ensure spaCy and model are available and return the NLP object
+def load_spacy_model():
+    try:
+        import spacy
+        return spacy.load("en_core_web_sm")
+    except (ImportError, OSError):
+        subprocess.run(["pip", "install", "spacy"])
+        import spacy
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+        return spacy.load("en_core_web_sm")
 
 # Sentence tokenizer using spaCy
-def spacy_sent_tokenize(text):
+def spacy_sent_tokenize(text, nlp):
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents if sent.text.strip() and any(c.isalnum() for c in sent.text)]
 
@@ -40,6 +41,7 @@ if uploaded_file:
     context_cut = st.radio("Context cut (currently only 'whole' is supported):", ['whole'])
 
     if st.button("🚀 Transform Data"):
+        nlp = load_spacy_model()
         result = []
 
         for _, row in df.iterrows():
@@ -47,7 +49,7 @@ if uploaded_file:
             current_id = row[id_col]
 
             if statement_cut == 'sentence':
-                sentences = spacy_sent_tokenize(full_text)
+                sentences = spacy_sent_tokenize(full_text, nlp)
             else:
                 sentences = [full_text]
 
