@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
-import spacy
+import nltk
+from nltk.tokenize import sent_tokenize
 from io import StringIO
 
-# Load spaCy model
-nlp = spacy.load("en_core_web_sm")
+# Download required NLTK data
+nltk.download('punkt')
 
-# Sentence tokenizer using spaCy
-def spacy_sent_tokenize(text):
-    doc = nlp(text)
-    return [sent.text.strip() for sent in doc.sents if sent.text.strip() and any(c.isalnum() for c in sent.text)]
+# Sentence tokenizer using NLTK
+def nltk_sent_tokenize(text):
+    return [sent.strip() for sent in sent_tokenize(text) if sent.strip() and any(c.isalnum() for c in sent)]
 
 st.title("📄 Text Transformation App")
 st.write("Upload a CSV file, select columns, and choose how to segment the text.")
@@ -40,7 +40,7 @@ if uploaded_file:
             current_id = row[id_col]
 
             if statement_cut == 'sentence':
-                sentences = spacy_sent_tokenize(full_text)
+                sentences = nltk_sent_tokenize(full_text)
             else:
                 sentences = [full_text]
 
