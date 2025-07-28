@@ -1,7 +1,3 @@
-# Install spaCy and download model
-!pip install spacy ipywidgets pandas --quiet
-!python -m spacy download en_core_web_sm
-
 # Load packages
 import pandas as pd
 import spacy
