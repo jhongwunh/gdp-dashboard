@@ -1,19 +1,17 @@
 import streamlit as st
 import pandas as pd
-import spacy
-from io import StringIO
-import spacy
 import subprocess
+from io import StringIO
 
+# Ensure spaCy and the language model are available
 try:
+    import spacy
     nlp = spacy.load("en_core_web_sm")
-except OSError:
+except (ImportError, OSError):
+    subprocess.run(["pip", "install", "spacy"])
+    import spacy
     subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
     nlp = spacy.load("en_core_web_sm")
-
-
-# Load spaCy model
-nlp = spacy.load("en_core_web_sm")
 
 # Sentence tokenizer using spaCy
 def spacy_sent_tokenize(text):
