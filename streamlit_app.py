@@ -1,17 +1,29 @@
 import streamlit as st
 import pandas as pd
-import spacy
 from io import StringIO
 
-# Load spaCy model
-nlp = spacy.load("en_core_web_sm")
+# Ensure spaCy and model are available
+import importlib.util
+import subprocess
+import sys
+
+if importlib.util.find_spec("spacy") is None:
+    subprocess.run([sys.executable, "-m", "pip", "install", "spacy"])
+
+import spacy
+
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+    nlp = spacy.load("en_core_web_sm")
 
 # Sentence tokenizer using spaCy
 def spacy_sent_tokenize(text):
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents if sent.text.strip() and any(c.isalnum() for c in sent.text)]
 
-st.title("📄 Sentence Tokenizer")
+st.title("📄 Text Transformation App")
 st.write("Upload a CSV file, select columns, and choose how to segment the text.")
 
 # Upload CSV
