@@ -1,9 +1,7 @@
-# Load packages
+import streamlit as st
 import pandas as pd
 import spacy
-from google.colab import files
-from IPython.display import display
-import ipywidgets as widgets
+from io import StringIO
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -13,58 +11,35 @@ def spacy_sent_tokenize(text):
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents if sent.text.strip() and any(c.isalnum() for c in sent.text)]
 
+st.title("📄 Text Transformation App")
+st.write("Upload a CSV file, select columns, and choose how to segment the text.")
+
 # Upload CSV
-print("📂 Please upload your CSV file:")
-uploaded = files.upload()
-filename = list(uploaded.keys())[0]
-df = pd.read_csv(filename)
-print("✅ File uploaded. Here's a preview:")
-display(df.head())
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
-# Column selection
-column_options = df.columns.tolist()
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    st.success("File uploaded successfully!")
+    st.write("Preview of the data:")
+    st.dataframe(df.head())
 
-id_selector = widgets.Dropdown(
-    options=column_options,
-    description='🆔 Select ID column:',
-    style={'description_width': 'initial'}
-)
+    # Column selection
+    columns = df.columns.tolist()
+    id_col = st.selectbox("🆔 Select ID column:", columns)
+    content_col = st.selectbox("📝 Select Content column:", columns)
 
-content_selector = widgets.Dropdown(
-    options=column_options,
-    description='📝 Select Content column:',
-    style={'description_width': 'initial'}
-)
+    # Options
+    statement_cut = st.radio("Statement cut:", ['sentence', 'post'])
+    context_cut = st.radio("Context cut (currently only 'whole' is supported):", ['whole'])
 
-statement_cut = widgets.ToggleButtons(
-    options=['sentence', 'post'],
-    description='Statement cut:',
-    style={'description_width': 'initial'}
-)
-
-context_cut = widgets.ToggleButtons(
-    options=['whole'],
-    description='Context cut (currently only "whole" is supported):',
-    style={'description_width': 'initial'}
-)
-
-process_button = widgets.Button(description="🚀 Transform Data")
-output_box = widgets.Output()
-
-def on_process_button_click(b):
-    output_box.clear_output()
-    with output_box:
-        ID_col = id_selector.value
-        text_col = content_selector.value
-        cut = statement_cut.value
-
+    if st.button("🚀 Transform Data"):
         result = []
 
         for _, row in df.iterrows():
-            full_text = str(row[text_col])
-            current_id = row[ID_col]
+            full_text = str(row[content_col])
+            current_id = row[id_col]
 
-            if cut == 'sentence':
+            if statement_cut == 'sentence':
                 sentences = spacy_sent_tokenize(full_text)
             else:
                 sentences = [full_text]
@@ -78,15 +53,14 @@ def on_process_button_click(b):
                 })
 
         df_out = pd.DataFrame(result)
-        print("✅ Transformation complete! Here's a preview:")
-        display(df_out.head())
+        st.success("✅ Transformation complete!")
+        st.write("Preview of the transformed data:")
+        st.dataframe(df_out.head())
 
-        output_filename = "transformed_output.csv"
-        df_out.to_csv(output_filename, index=False)
-        files.download(output_filename)
-
-process_button.on_click(on_process_button_click)
-
-# Show interface
-print("📌 Choose your columns and options below:")
-display(id_selector, content_selector, statement_cut, context_cut, process_button, output_box)
+        csv = df_out.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Transformed CSV",
+            data=csv,
+            file_name='transformed_output.csv',
+            mime='text/csv'
+        )
