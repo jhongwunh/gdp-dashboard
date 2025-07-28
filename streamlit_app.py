@@ -3,9 +3,13 @@ import pandas as pd
 import nltk
 from nltk.tokenize import sent_tokenize
 from io import StringIO
+import os
 
-# Download required NLTK data
-nltk.download('punkt')
+# Download punkt at startup if not found
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Sentence tokenizer using NLTK
 def nltk_sent_tokenize(text):
