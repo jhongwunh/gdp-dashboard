@@ -1,68 +1,44 @@
 import streamlit as st
 import pandas as pd
-import nltk
-from nltk.tokenize import sent_tokenize
+import re
 from io import StringIO
-import os
 
-# Sentence tokenizer using NLTK
-def nltk_sent_tokenize(text):
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt')
-    return [sent.strip() for sent in sent_tokenize(text) if sent.strip() and any(c.isalnum() for c in sent)]
+st.title("Sentence Tokenizer and Tag Extractor")
 
-st.title("📄 Text Transformation App")
-st.write("Upload a CSV file, select columns, and choose how to segment the text.")
-
-# Upload CSV
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
-if uploaded_file:
+if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-    st.success("File uploaded successfully!")
-    st.write("Preview of the data:")
-    st.dataframe(df.head())
+    st.write("Data Preview:", df.head())
 
-    # Column selection
-    columns = df.columns.tolist()
-    id_col = st.selectbox("🆔 Select ID column:", columns)
-    content_col = st.selectbox("📝 Select Content column:", columns)
+    cols = df.columns.tolist()
+    id_col = st.selectbox("Select ID Column", cols)
+    context_col = st.selectbox("Select Text Column", cols)
 
-    # Options
-    statement_cut = st.radio("Statement cut:", ['sentence', 'post'])
-    context_cut = st.radio("Context cut (currently only 'whole' is supported):", ['whole'])
+    def tokenize(text):
+        text = str(text).strip()
+        tags = re.findall(r'#\w+', text)
+        clean = re.sub(r'#\w+', '', text)
+        parts = re.split(r'(?<=[.!?])\s+(?=[A-Z])', clean)
+        parts = [p.strip() for p in parts if p.strip()]
+        if tags:
+            parts.append(' '.join(tags))
+        return parts
 
-    if st.button("🚀 Transform Data"):
-        result = []
-
+    if st.button("Run Tokenization"):
+        data = []
         for _, row in df.iterrows():
-            full_text = str(row[content_col])
-            current_id = row[id_col]
-
-            if statement_cut == 'sentence':
-                sentences = nltk_sent_tokenize(full_text)
-            else:
-                sentences = [full_text]
-
-            for i, sent in enumerate(sentences, start=1):
-                result.append({
-                    "ID": current_id,
-                    "Sentence ID": i,
-                    "Context": full_text,
-                    "Statement": sent
+            sentences = tokenize(row[context_col])
+            for i, s in enumerate(sentences, 1):
+                data.append({
+                    'ID': row[id_col],
+                    'Sentence ID': i,
+                    'Context': row[context_col],
+                    'Statement': s
                 })
 
-        df_out = pd.DataFrame(result)
-        st.success("✅ Transformation complete!")
-        st.write("Preview of the transformed data:")
-        st.dataframe(df_out.head())
+        result = pd.DataFrame(data)
+        st.write("Tokenized Preview:", result.head(10))
 
-        csv = df_out.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Transformed CSV",
-            data=csv,
-            file_name='transformed_output.csv',
-            mime='text/csv'
-        )
+        csv = result.to_csv(index=False)
+        st.download_button("Download Tokenized CSV", csv, "sentence_tokenized.csv", "text/csv")
