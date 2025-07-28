@@ -5,14 +5,12 @@ from nltk.tokenize import sent_tokenize
 from io import StringIO
 import os
 
-# Download punkt at startup if not found
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
 # Sentence tokenizer using NLTK
 def nltk_sent_tokenize(text):
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
     return [sent.strip() for sent in sent_tokenize(text) if sent.strip() and any(c.isalnum() for c in sent)]
 
 st.title("📄 Text Transformation App")
